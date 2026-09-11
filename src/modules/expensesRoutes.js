@@ -4,7 +4,7 @@ const express = require("express")
 // local
 const expensesData = require("../services/readExpensesData")
 const isValidDate = require("../services/ValidateDate")
-const { getAllData, getExpenseById, getSummary, createNewExpense, updateExpense } = require("../modules/controllers")
+const { getAllData, getExpenseById, getSummary, createNewExpense, updateExpense, deleteItem } = require("../modules/controllers")
 
 const expensesRouter = express.Router()
 
@@ -34,8 +34,10 @@ expensesRouter.use((req, res, next) => {
     next()
 })
 
-// check to id exist and has data
-expensesRouter.param("id", (req, res, next, id) => {
+// check to id exist and has dataanti
+function checkParam(req, res, next) {
+    const { id } = req.params
+    
     if (!id) {
         return res.status(404).send({
             status: "failed",
@@ -55,7 +57,7 @@ expensesRouter.param("id", (req, res, next, id) => {
     req.body = idJsonData
 
     next()
-})
+}
 
 // check req body to create new expense
 const checkReqBody = (req, res, next) => {
@@ -87,14 +89,12 @@ const checkReqBody = (req, res, next) => {
     next()
 }
 
+// routes
+expensesRouter.route("/").get(getAllData).post(checkReqBody, createNewExpense)
 
-expensesRouter.get("/", getAllData)
 expensesRouter.get("/summary", getSummary)
-expensesRouter.get("/:id", getExpenseById)
 
-expensesRouter.post("/", checkReqBody, createNewExpense)
-
-expensesRouter.patch("/:id", updateExpense )
+expensesRouter.route("/:id").get(checkParam, getExpenseById).patch(updateExpense).delete(checkParam,deleteItem)
 
 
 

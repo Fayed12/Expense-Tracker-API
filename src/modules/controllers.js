@@ -110,23 +110,25 @@ exports.createNewExpense = (req, res) => {
 
         res.status(201).send({
             status: "success",
+            location:`get /api/expenses/${newExpense.id}`,
             data: expensesData
         })
     })
 }
 
 exports.updateExpense = (req, res) => {
-    const newDate = req.body
-    const { id } = req.params
+    const { id, ...newData } = req.body;
 
-    if (!id) {
+    const reqParam = req.params
+
+    if (!reqParam.id) {
         return res.status(404).send({
             status: "failed",
             message: "id not found!"
         })
     }
 
-    const idJsonData = expensesData.find((exp) => exp.id === id)
+    const idJsonData = expensesData.find((exp) => exp.id === reqParam.id)
 
     if (!idJsonData?.id) {
         return res.status(404).send({
@@ -135,7 +137,7 @@ exports.updateExpense = (req, res) => {
         })
     }
 
-    if (newDate.id) {
+    if (newData.id) {
         return res.status(400).send({
             status: "failed",
             message: "you can not update id!"
@@ -144,9 +146,9 @@ exports.updateExpense = (req, res) => {
 
     const changedFields = {};
 
-    for (const key in newDate) {
-        if (newDate[key] !== idJsonData[key]) {
-            changedFields[key] = newDate[key];
+    for (const key in newData) {
+        if (newData[key] !== idJsonData[key]) {
+            changedFields[key] = newData[key];
         }
     }
 
@@ -157,7 +159,36 @@ exports.updateExpense = (req, res) => {
         })
     }
 
-    Object.assign(oldExpense, newDate)
+    Object.assign(idJsonData, newData)
+
+    fs.writeFile(`${__dirname}/../../data/expenses.json`, JSON.stringify(expensesData), (err) => {
+        if (err) {
+            return res.status(500).send({
+                status: "failed",
+                message: "server error!"
+            })
+        }
+
+        res.status(200).send({
+            status: "success",
+            location:`get /api/expenses/${idJsonData.id}`,
+            data: expensesData
+        })
+    })
+}
+
+exports.deleteItem = (req, res) => {
+    const bodyData = req.body
+    const oldExpenseIndex = expensesData.findIndex((exp) => exp.id === bodyData.id)
+
+    if (oldExpenseIndex === -1) {
+        return res.status(404).send({
+            status: "failed",
+            message: "data not found!"
+        })
+    }
+
+    expensesData.splice(oldExpenseIndex, 1);
 
     fs.writeFile(`${__dirname}/../../data/expenses.json`, JSON.stringify(expensesData), (err) => {
         if (err) {
@@ -172,4 +203,5 @@ exports.updateExpense = (req, res) => {
             data: expensesData
         })
     })
+    
 }
